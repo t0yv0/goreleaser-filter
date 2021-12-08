@@ -9,8 +9,9 @@ import (
 )
 
 type filters struct {
-	goos   string
-	goarch string
+	goos    string
+	goarch  string
+	noBlobs bool
 }
 
 func isMatchingBuild(filters filters, build *value) bool {
@@ -96,15 +97,19 @@ func yamlTransformer(filters filters, config *value) {
 	}
 	config.at("builds").set(arrayValue(matchingBuilds...))
 	cleanupArchives(config)
+	if filters.noBlobs {
+		config.deleteAt("blobs")
+	}
 }
 
 func main() {
 	goos := flag.String("goos", "", "goos filter for builds")
 	goarch := flag.String("goarch", "", "goarch filter for builds")
+	noBlobs := flag.Bool("no-blobs", false, "removes the blobs section")
 
 	flag.Parse()
 
-	filters := filters{goos: *goos, goarch: *goarch}
+	filters := filters{goos: *goos, goarch: *goarch, noBlobs: *noBlobs}
 	runYamlTransformer(func(config *value) {
 		yamlTransformer(filters, config)
 	})
@@ -160,6 +165,17 @@ func (v *value) at(key string) *value {
 			m[key] = v
 		},
 	}
+}
+
+func (v *value) deleteAt(key string) {
+	if v == nil {
+		return
+	}
+	m, ok := v.toInterface().(map[interface{}]interface{})
+	if !ok {
+		return
+	}
+	delete(m, key)
 }
 
 func (v *value) elements() []*value {
