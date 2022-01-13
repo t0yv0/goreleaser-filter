@@ -100,6 +100,8 @@ func yamlTransformer(filters filters, config *value) {
 	if filters.noBlobs {
 		config.deleteAt("blobs")
 	}
+	// TODO make this a parameter
+	config.deleteAt("brews")
 }
 
 func main() {
